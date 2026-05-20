@@ -9,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker'; // Galeri paketi eklendi
 import { COLORS, SIZES } from '../constants/theme';
 
 export default function CreateRecipeScreen({ navigation }) {
@@ -23,10 +25,33 @@ export default function CreateRecipeScreen({ navigation }) {
   const [ingredients, setIngredients] = useState('');
   const [instructions, setInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUri, setImageUri] = useState(null); // Seçilen fotoğrafın URI'sini tutacak
+
+  // Galeriden Fotoğraf Seçme Fonksiyonu
+  const pickImage = async () => {
+    // Kullanıcıdan galeri izni istiyoruz (iOS ve Android için standart güvenlik)
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert("İzin Gerekli", "Fotoğraf seçebilmek için galeri erişim izni vermeniz gerekiyor.");
+      return;
+    }
+
+    // Galeriyi aç
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Sadece fotoğraflar
+      allowsEditing: true, // Kullanıcı fotoğrafı kırpabilsin
+      aspect: [16, 9], // Geniş tarif kapağı formatı
+      quality: 0.8, // Optimizasyon için kaliteyi biraz düşürüyoruz
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri); // Seçilen fotoğrafı state'e kaydet
+    }
+  };
 
   // Form Gönderme İşlemi
   const handleSubmit = () => {
-    // 1. Basit Validasyon
     if (!recipeName || !cuisine || !prepTime || !ingredients || !instructions) {
       Alert.alert('Eksik Bilgi', 'Lütfen tüm alanları doldurun.');
       return;
@@ -34,7 +59,7 @@ export default function CreateRecipeScreen({ navigation }) {
 
     setIsSubmitting(true);
 
-    // 2. API'ye Gönderme Simülasyonu (DummyJSON'a yeni tarif eklenemediği için başarılı varsayıyoruz)
+    // API Simülasyonu
     setTimeout(() => {
       setIsSubmitting(false);
       Alert.alert(
@@ -55,15 +80,29 @@ export default function CreateRecipeScreen({ navigation }) {
           <Ionicons name="arrow-back" size={24} color={COLORS.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Yeni Tarif Ekle</Text>
-        <View style={{ width: 24 }} /> {/* Başlığı ortalamak için boşluk */}
+        <View style={{ width: 24 }} /> 
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Sahte Görsel Yükleme Alanı */}
-        <TouchableOpacity style={styles.imageUploadBox}>
-          <Ionicons name="camera-outline" size={40} color={COLORS.gray} />
-          <Text style={styles.imageUploadText}>Kapak Görseli Ekle</Text>
+        {/* GERÇEK GÖRSEL YÜKLEME ALANI */}
+        <TouchableOpacity style={styles.imageUploadBox} onPress={pickImage}>
+          {imageUri ? (
+            // Eğer fotoğraf seçildiyse fotoğrafı göster ve üzerine değiştirme butonu koy
+            <View style={styles.uploadedImageContainer}>
+              <Image source={{ uri: imageUri }} style={styles.uploadedImage} />
+              <View style={styles.editImageOverlay}>
+                <Ionicons name="pencil" size={20} color="#FFF" />
+                <Text style={styles.editImageText}>Değiştir</Text>
+              </View>
+            </View>
+          ) : (
+            // Fotoğraf yoksa varsayılan boş kutuyu göster
+            <>
+              <Ionicons name="images-outline" size={40} color={COLORS.gray} />
+              <Text style={styles.imageUploadText}>Kapak Görseli Seç</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         {/* Tarif Adı */}
@@ -212,7 +251,7 @@ const styles = StyleSheet.create({
   },
   imageUploadBox: {
     width: '100%',
-    height: 150,
+    height: 180,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: SIZES.radius * 1.5,
     borderWidth: 1,
@@ -221,6 +260,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 25,
+    overflow: 'hidden', // Fotoğraf taşmasın diye
+  },
+  uploadedImageContainer: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  editImageOverlay: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  editImageText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   imageUploadText: {
     color: COLORS.gray,

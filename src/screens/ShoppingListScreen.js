@@ -1,15 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../constants/theme';
 
-export default function FeedScreen() {
+export default function ShoppingListScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>ShoppingListScreen</Text>
+      <Text style={{ color: '#FFF' }}>Alışveriş Listesi Ekranı Yapım Aşamasında...</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  text: { fontSize: 18, fontWeight: 'bold' }
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.backgroundDark, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  }
 });

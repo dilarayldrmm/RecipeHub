@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,13 @@ import {
   Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker'; // Galeri paketi eklendi
+import * as ImagePicker from 'expo-image-picker'; 
 import { COLORS, SIZES } from '../constants/theme';
+import { RecipeContext } from '../context/RecipeContext'; // Context import edildi
 
 export default function CreateRecipeScreen({ navigation }) {
+  const { addRecipe } = useContext(RecipeContext); // Ekleme fonksiyonunu Context'ten çekiyoruz
+
   // Form State'leri
   const [recipeName, setRecipeName] = useState('');
   const [cuisine, setCuisine] = useState('');
@@ -25,11 +28,10 @@ export default function CreateRecipeScreen({ navigation }) {
   const [ingredients, setIngredients] = useState('');
   const [instructions, setInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imageUri, setImageUri] = useState(null); // Seçilen fotoğrafın URI'sini tutacak
+  const [imageUri, setImageUri] = useState(null); 
 
   // Galeriden Fotoğraf Seçme Fonksiyonu
   const pickImage = async () => {
-    // Kullanıcıdan galeri izni istiyoruz (iOS ve Android için standart güvenlik)
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
@@ -37,16 +39,15 @@ export default function CreateRecipeScreen({ navigation }) {
       return;
     }
 
-    // Galeriyi aç
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Sadece fotoğraflar
-      allowsEditing: true, // Kullanıcı fotoğrafı kırpabilsin
-      aspect: [16, 9], // Geniş tarif kapağı formatı
-      quality: 0.8, // Optimizasyon için kaliteyi biraz düşürüyoruz
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+      allowsEditing: true, 
+      aspect: [16, 9], 
+      quality: 0.8, 
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri); // Seçilen fotoğrafı state'e kaydet
+      setImageUri(result.assets[0].uri); 
     }
   };
 
@@ -59,13 +60,32 @@ export default function CreateRecipeScreen({ navigation }) {
 
     setIsSubmitting(true);
 
-    // API Simülasyonu
+    // API Simülasyonu ve Local State Güncellemesi
     setTimeout(() => {
       setIsSubmitting(false);
+
+      // 1. Yeni tarif objesini oluştur
+      const newRecipe = {
+        name: recipeName,
+        cuisine: cuisine,
+        prepTimeMinutes: parseInt(prepTime) || 0,
+        cookTimeMinutes: 0, // Toplam süre hesabı için varsayılan
+        difficulty: difficulty,
+        // Satır sonlarına göre metni diziye (array) çevirir ve boşlukları temizler
+        ingredients: ingredients.split('\n').filter(i => i.trim() !== ''), 
+        instructions: instructions.split('\n').filter(i => i.trim() !== ''),
+        // Görsel seçilmediyse şık bir varsayılan görsel ata
+        image: imageUri || 'https://images.unsplash.com/photo-1495195134817-a1a280e065bc?q=80&w=1000&auto=format&fit=crop',
+      };
+
+      // 2. Context üzerinden ana listeye ekle
+      addRecipe(newRecipe);
+
+      // 3. Başarı mesajı ve Ana Sayfaya (Feed) yönlendirme
       Alert.alert(
         'Başarılı!',
         'Tarifiniz başarıyla eklendi.',
-        [{ text: 'Tamam', onPress: () => navigation.goBack() }]
+        [{ text: 'Tamam', onPress: () => navigation.navigate('FeedTab') }]
       );
     }, 1500);
   };
@@ -85,10 +105,8 @@ export default function CreateRecipeScreen({ navigation }) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* GERÇEK GÖRSEL YÜKLEME ALANI */}
         <TouchableOpacity style={styles.imageUploadBox} onPress={pickImage}>
           {imageUri ? (
-            // Eğer fotoğraf seçildiyse fotoğrafı göster ve üzerine değiştirme butonu koy
             <View style={styles.uploadedImageContainer}>
               <Image source={{ uri: imageUri }} style={styles.uploadedImage} />
               <View style={styles.editImageOverlay}>
@@ -97,7 +115,6 @@ export default function CreateRecipeScreen({ navigation }) {
               </View>
             </View>
           ) : (
-            // Fotoğraf yoksa varsayılan boş kutuyu göster
             <>
               <Ionicons name="images-outline" size={40} color={COLORS.gray} />
               <Text style={styles.imageUploadText}>Kapak Görseli Seç</Text>
@@ -105,7 +122,6 @@ export default function CreateRecipeScreen({ navigation }) {
           )}
         </TouchableOpacity>
 
-        {/* Tarif Adı */}
         <Text style={styles.label}>Tarif Adı</Text>
         <View style={styles.inputContainer}>
           <Ionicons name="restaurant-outline" size={20} color={COLORS.gray} style={styles.inputIcon} />
@@ -119,7 +135,6 @@ export default function CreateRecipeScreen({ navigation }) {
         </View>
 
         <View style={styles.row}>
-          {/* Mutfak Türü */}
           <View style={{ flex: 1, marginRight: 10 }}>
             <Text style={styles.label}>Mutfak Türü</Text>
             <View style={styles.inputContainer}>
@@ -134,7 +149,6 @@ export default function CreateRecipeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Süre */}
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.label}>Süre (Dk)</Text>
             <View style={styles.inputContainer}>
@@ -151,7 +165,6 @@ export default function CreateRecipeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Zorluk Derecesi Seçici */}
         <Text style={styles.label}>Zorluk Derecesi</Text>
         <View style={styles.difficultyContainer}>
           {['Easy', 'Medium', 'Hard'].map((level) => (
@@ -173,7 +186,6 @@ export default function CreateRecipeScreen({ navigation }) {
           ))}
         </View>
 
-        {/* Malzemeler */}
         <Text style={styles.label}>Malzemeler</Text>
         <View style={[styles.inputContainer, styles.textAreaContainer]}>
           <TextInput
@@ -188,7 +200,6 @@ export default function CreateRecipeScreen({ navigation }) {
           />
         </View>
 
-        {/* Hazırlanışı */}
         <Text style={styles.label}>Hazırlanışı</Text>
         <View style={[styles.inputContainer, styles.textAreaContainer]}>
           <TextInput
@@ -203,7 +214,6 @@ export default function CreateRecipeScreen({ navigation }) {
           />
         </View>
 
-        {/* Gönder Butonu */}
         <TouchableOpacity 
           style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
           onPress={handleSubmit}
@@ -260,7 +270,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 25,
-    overflow: 'hidden', // Fotoğraf taşmasın diye
+    overflow: 'hidden', 
   },
   uploadedImageContainer: {
     width: '100%',

@@ -8,7 +8,7 @@ export const RecipeContext = createContext();
 export const RecipeProvider = ({ children }) => {
   const [state, dispatch] = useReducer(recipeReducer, initialRecipeState);
 
-  // 1. Uygulama açılışında AsyncStorage'dan favori ve beğenileri yükleme [cite: 98, 99]
+  // 1. Uygulama açılışında AsyncStorage'dan favori ve beğenileri yükleme
   useEffect(() => {
     const loadPersistedData = async () => {
       try {
@@ -38,13 +38,13 @@ export const RecipeProvider = ({ children }) => {
     }
   };
 
-  // 2. Tarifleri Getirme (Infinite Scroll için useCallback ile optimize edildi) [cite: 14, 29]
+  // 2. Tarifleri Getirme (Infinite Scroll için useCallback ile optimize edildi)
   const loadMore = useCallback(async (skip = 0) => {
     if (!state.hasMore && skip !== 0) return;
 
     dispatch({ type: RECIPE_ACTIONS.FETCH_START });
     try {
-      // DummyJSON limit=12 endpoint'i kullanılıyor [cite: 11]
+      // DummyJSON limit=12 endpoint'i kullanılıyor
       const response = await fetch(`https://dummyjson.com/recipes?limit=12&skip=${skip}`);
       const data = await response.json();
 
@@ -57,7 +57,7 @@ export const RecipeProvider = ({ children }) => {
     }
   }, [state.hasMore]);
 
-  // 3. Optimistik Favori Ekleme/Çıkarma [cite: 22, 29]
+  // 3. Optimistik Favori Ekleme/Çıkarma
   const toggleFavorite = useCallback((recipeId) => {
     const isFav = state.favorites.includes(recipeId);
     const newFavorites = isFav
@@ -74,7 +74,7 @@ export const RecipeProvider = ({ children }) => {
     updateStorage('@recipe_favorites', newFavorites);
   }, [state.favorites]);
 
-  // 4. Optimistik Beğeni Ekleme/Çıkarma [cite: 22, 29]
+  // 4. Optimistik Beğeni Ekleme/Çıkarma
   const toggleLike = useCallback((recipeId) => {
     const isLiked = state.likedRecipes.includes(recipeId);
     const newLikes = isLiked
@@ -91,12 +91,26 @@ export const RecipeProvider = ({ children }) => {
     updateStorage('@recipe_liked', newLikes);
   }, [state.likedRecipes]);
 
+  // 5. Manuel Tarif Ekleme (Create Recipe ekranından gelen veriyi local state'e yazar)
+  const addRecipe = useCallback((newRecipeData) => {
+    // FlatList'in çökmemesi için sahte bir ID ve eksik verileri dolduruyoruz
+    const recipeWithMockData = {
+      ...newRecipeData,
+      id: Math.floor(Math.random() * 10000) + 1000, // Sahte benzersiz ID
+      reviewCount: 0,
+      caloriesPerServing: Math.floor(Math.random() * 400) + 200, // Rastgele kalori
+    };
+
+    dispatch({ type: 'ADD_RECIPE', payload: recipeWithMockData });
+  }, []);
+
   return (
     <RecipeContext.Provider value={{
       ...state,
       loadMore,
       toggleFavorite,
-      toggleLike
+      toggleLike,
+      addRecipe // Yeni fonksiyonu diğer ekranların kullanabilmesi için dışarı aktarıyoruz
     }}>
       {children}
     </RecipeContext.Provider>

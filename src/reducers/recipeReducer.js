@@ -1,12 +1,11 @@
 import { RECIPE_ACTIONS } from '../constants/actionTypes';
 
-// Başlangıç State'imiz
 export const initialRecipeState = {
   recipes: [],
   hasMore: true,
   isLoading: false,
-  favorites: [],     // AsyncStorage'dan gelecek
-  likedRecipes: [],  // AsyncStorage'dan gelecek
+  favorites: [],
+  likedRecipes: [],
   commentCache: {},
   error: null,
 };
@@ -25,9 +24,8 @@ export const recipeReducer = (state, action) => {
       return {
         ...state,
         isLoading: false,
-        // Yeni gelen tarifleri mevcut listenin sonuna ekliyoruz
         recipes: [...state.recipes, ...action.payload.newRecipes],
-        hasMore: action.payload.newRecipes.length === 12, // Dökümanda limit 12 olarak istenmiş
+        hasMore: action.payload.newRecipes.length === 12,
       };
     case RECIPE_ACTIONS.FETCH_FAILURE:
       return { ...state, isLoading: false, error: action.payload };
@@ -50,6 +48,12 @@ export const recipeReducer = (state, action) => {
       return {
         ...state,
         favorites: state.favorites.filter(id => id !== action.payload),
+      };
+    // YENİ EKLENEN KISIM: Yeni tarifi listenin en başına ekler
+    case 'ADD_RECIPE':
+      return {
+        ...state,
+        recipes: [action.payload, ...state.recipes], 
       };
     default:
       return state;
